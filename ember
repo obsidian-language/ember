@@ -1,6 +1,6 @@
 #!/bin/bash
 
-REPO="obsidian-lang/obsidian"
+REPO="obsidian-language/obsidian"
 INSTALL_DIR="$HOME/.obsidian"
 BIN_DIR="$HOME/.local/bin"
 OBSIDIAN_BINARY="obsidian"
