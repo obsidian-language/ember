@@ -96,7 +96,7 @@ function detect_package_manager {
 }
 
 function uninstall_apps {
-    if confirm "Are you sure you want to uninstall the Obsidian tool-chain? This will remove both Obsidian and Cinder."; then
+    if confirm "Are you sure you want to uninstall the Obsidian tool-chain? This will remove both Obsidian."; then
         info "Starting uninstallation of the Obsidian tool-chain..."
         rm -f "$BIN_DIR/$OBSIDIAN_BINARY" && info "Removed symlink for Obsidian."
         rm -f "$BIN_DIR/$CINDER_BINARY" && info "Removed symlink for Cinder."
@@ -111,7 +111,7 @@ function uninstall_apps {
         esac
 
         sed -i "\|export PATH=\"$BIN_DIR:\$PATH\"|d" "$PROFILE_FILE" && info "Removed $BIN_DIR from PATH in $PROFILE_FILE"
-        info "Obsidian and Cinder tool-chain uninstalled successfully."
+        info "Obsidian tool-chain uninstalled successfully."
     else
         info "Uninstallation cancelled."
     fi
