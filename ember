@@ -1,9 +1,11 @@
 #!/bin/bash
 
-REPO="obsidian-language/obsidian"
+REPO_OBSIDIAN="obsidian-language/obsidian"
+REPO_CINDER="obsidian-language/cinder"
 INSTALL_DIR="$HOME/.obsidian"
 BIN_DIR="$HOME/.local/bin"
 OBSIDIAN_BINARY="obsidian"
+CINDER_BINARY="cinder"
 
 GREEN="\033[1;32m"
 YELLOW="\033[1;33m"
@@ -37,7 +39,7 @@ function check_command {
 }
 
 function check_dependencies {
-    info "Checking for required dependencies..."
+    info "Checking for required dependencies for the Obsidian tool-chain..."
     for dep in "${DEPENDENCIES[@]}"; do
         if ! check_command "$dep"; then
             warn "Missing dependency: '$dep'. Installation may fail if not available."
@@ -61,15 +63,15 @@ function install_dependencies {
     local packages=("libstdc++6" "clang-14" "build-essential")
     case "$1" in
         apt)
-            info "Installing dependencies using apt..."
+            info "Installing dependencies using apt for the Obsidian tool-chain..."
             sudo apt update -y && sudo apt install -y "${packages[@]}"
             ;;
         dnf)
-            info "Installing dependencies using dnf..."
+            info "Installing dependencies using dnf for the Obsidian tool-chain..."
             sudo dnf install -y "${packages[@]}"
             ;;
         pacman)
-            info "Installing dependencies using pacman..."
+            info "Installing dependencies using pacman for the Obsidian tool-chain..."
             sudo pacman -Sy --needed gcc llvm14 clang base-devel || { warn "If pacman fails, run 'yay -S gcc llvm14 clang base-devel'."; }
             ;;
         *)
@@ -80,7 +82,7 @@ function install_dependencies {
 }
 
 function detect_package_manager {
-    info "Detecting package manager..."
+    info "Detecting package manager for the Obsidian tool-chain..."
     if command -v apt &>/dev/null; then
         install_dependencies "apt"
     elif command -v dnf &>/dev/null; then
@@ -93,11 +95,12 @@ function detect_package_manager {
     fi
 }
 
-function uninstall_obsidian {
-    if confirm "Are you sure you want to uninstall Obsidian?"; then
-        info "Starting uninstallation of Obsidian..."
-        rm -f "$BIN_DIR/$OBSIDIAN_BINARY" && info "Removed symlink at $BIN_DIR/$OBSIDIAN_BINARY"
-        rm -rf "$INSTALL_DIR" && info "Deleted installation directory at $INSTALL_DIR"
+function uninstall_apps {
+    if confirm "Are you sure you want to uninstall the Obsidian tool-chain? This will remove both Obsidian and Cinder."; then
+        info "Starting uninstallation of the Obsidian tool-chain..."
+        rm -f "$BIN_DIR/$OBSIDIAN_BINARY" && info "Removed symlink for Obsidian."
+        rm -f "$BIN_DIR/$CINDER_BINARY" && info "Removed symlink for Cinder."
+        rm -rf "$INSTALL_DIR" && info "Deleted installation directory for the Obsidian tool-chain at $INSTALL_DIR"
 
         local PROFILE_FILE=""
         case "$(basename "$SHELL")" in
@@ -108,7 +111,7 @@ function uninstall_obsidian {
         esac
 
         sed -i "\|export PATH=\"$BIN_DIR:\$PATH\"|d" "$PROFILE_FILE" && info "Removed $BIN_DIR from PATH in $PROFILE_FILE"
-        info "Obsidian uninstalled successfully."
+        info "Obsidian and Cinder tool-chain uninstalled successfully."
     else
         info "Uninstallation cancelled."
     fi
@@ -116,11 +119,11 @@ function uninstall_obsidian {
 }
 
 if [ "$1" == "--uninstall" ]; then
-    uninstall_obsidian
+    uninstall_apps
 fi
 
 check_dependencies || {
-    if confirm "Dependencies are missing. Would you like to install them now?"; then
+    if confirm "Dependencies are missing. Would you like to install them now for the Obsidian tool-chain?"; then
         detect_package_manager
     else
         error "Dependencies missing and installation not confirmed. Exiting."
@@ -131,7 +134,7 @@ check_dependencies || {
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     detect_package_manager
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-    info "macOS detected. Checking for llvm@14..."
+    info "macOS detected. Checking for llvm@14 for the Obsidian tool-chain..."
     check_macos_dependencies || {
         warn "Please install llvm@14 via Homebrew (brew install llvm@14). Exiting."
         exit 1
@@ -147,21 +150,22 @@ case $ARCH in
     x86_64) ARCH="x86_64";;
     aarch64) ARCH="arm64";;
     arm64) ARCH="arm64";;
-    *) error "Architecture $ARCH is not supported."; exit 1;;
+    *) error "Architecture $ARCH is not supported. Exiting."; exit 1;;
 esac
 
 VERSION="${1:-latest}"
-API_URL="https://api.github.com/repos/$REPO/releases"
 
-info "Fetching release information for $REPO (version: $VERSION)..."
+API_URL="https://api.github.com/repos/$REPO_OBSIDIAN/releases"
+
+info "Fetching release information for Obsidian (version: $VERSION)..."
 RELEASE_DATA=$(curl -s "$API_URL" | jq 'map(select(.prerelease or .draft == false)) | .[0]')
 TAG_NAME=$(echo "$RELEASE_DATA" | jq -r '.tag_name')
 if [ "$TAG_NAME" == "null" ] || [ -z "$TAG_NAME" ]; then
-    error "Could not retrieve release information for version '$VERSION'. Aborting."
+    error "Could not retrieve release information for Obsidian version '$VERSION'. Aborting."
     exit 1
 fi
 
-info "Release found: $TAG_NAME"
+info "Release found for Obsidian: $TAG_NAME"
 
 EXPECTED_TARBALL_NAME="obsidian-${OS}-${ARCH}.tar.gz"
 EXPECTED_CHECKSUM_NAME="${OS}-${ARCH}.sha256"
@@ -169,27 +173,65 @@ TARBALL_URL=$(echo "$RELEASE_DATA" | jq -r ".assets[] | select(.name == \"$EXPEC
 CHECKSUM_URL=$(echo "$RELEASE_DATA" | jq -r ".assets[] | select(.name == \"$EXPECTED_CHECKSUM_NAME\") | .browser_download_url")
 
 if [ -z "$TARBALL_URL" ] || [ -z "$CHECKSUM_URL" ]; then
-    error "Missing assets (tarball or checksum) for release. Installation aborted."
+    error "Missing assets (tarball or checksum) for Obsidian release. Installation aborted."
     exit 1
 fi
 
-info "Downloading release assets..."
+info "Downloading Obsidian release assets..."
 mkdir -p "$INSTALL_DIR" "$BIN_DIR"
 curl -L -o "$INSTALL_DIR/$EXPECTED_TARBALL_NAME" "$TARBALL_URL"
 curl -L -o "$INSTALL_DIR/$EXPECTED_CHECKSUM_NAME" "$CHECKSUM_URL"
 
-info "Verifying download integrity..."
+info "Verifying Obsidian download integrity..."
 cd "$INSTALL_DIR"
 if ! sha256sum -c "$EXPECTED_CHECKSUM_NAME"; then
-    error "Checksum verification failed. Installation aborted."
+    error "Checksum verification failed for Obsidian. Installation aborted."
     rm -f "$EXPECTED_TARBALL_NAME" "$EXPECTED_CHECKSUM_NAME"
     exit 1
 fi
 
-info "Extracting files..."
+info "Extracting Obsidian files..."
 tar -xzvf "$EXPECTED_TARBALL_NAME" -C "$INSTALL_DIR"
-EXTRACTED_BINARY="$INSTALL_DIR/obsidian-${OS}-${ARCH}"
-ln -sf "$EXTRACTED_BINARY" "$BIN_DIR/$OBSIDIAN_BINARY" || { error "Symlink creation failed."; exit 1; }
+EXTRACTED_OBSIDIAN_BINARY="$INSTALL_DIR/obsidian-${OS}-${ARCH}"
+ln -sf "$EXTRACTED_OBSIDIAN_BINARY" "$BIN_DIR/$OBSIDIAN_BINARY" || { error "Symlink creation for Obsidian failed."; exit 1; }
+rm -f "$EXPECTED_TARBALL_NAME" "$EXPECTED_CHECKSUM_NAME"
+
+info "Fetching release information for Cinder (version: $VERSION)..."
+API_URL="https://api.github.com/repos/$REPO_CINDER/releases"
+RELEASE_DATA=$(curl -s "$API_URL" | jq 'map(select(.prerelease or .draft == false)) | .[0]')
+TAG_NAME=$(echo "$RELEASE_DATA" | jq -r '.tag_name')
+if [ "$TAG_NAME" == "null" ] || [ -z "$TAG_NAME" ]; then
+    error "Could not retrieve release information for Cinder version '$VERSION'. Aborting."
+    exit 1
+fi
+
+info "Release found for Cinder: $TAG_NAME"
+
+EXPECTED_TARBALL_NAME="cinder-${OS}-${ARCH}.tar.gz"
+EXPECTED_CHECKSUM_NAME="${OS}-${ARCH}.sha256"
+TARBALL_URL=$(echo "$RELEASE_DATA" | jq -r ".assets[] | select(.name == \"$EXPECTED_TARBALL_NAME\") | .browser_download_url")
+CHECKSUM_URL=$(echo "$RELEASE_DATA" | jq -r ".assets[] | select(.name == \"$EXPECTED_CHECKSUM_NAME\") | .browser_download_url")
+
+if [ -z "$TARBALL_URL" ] || [ -z "$CHECKSUM_URL" ]; then
+    error "Missing assets (tarball or checksum) for Cinder release. Installation aborted."
+    exit 1
+fi
+
+info "Downloading Cinder release assets..."
+curl -L -o "$INSTALL_DIR/$EXPECTED_TARBALL_NAME" "$TARBALL_URL"
+curl -L -o "$INSTALL_DIR/$EXPECTED_CHECKSUM_NAME" "$CHECKSUM_URL"
+
+info "Verifying Cinder download integrity..."
+if ! sha256sum -c "$EXPECTED_CHECKSUM_NAME"; then
+    error "Checksum verification failed for Cinder. Installation aborted."
+    rm -f "$EXPECTED_TARBALL_NAME" "$EXPECTED_CHECKSUM_NAME"
+    exit 1
+fi
+
+info "Extracting Cinder files..."
+tar -xzvf "$EXPECTED_TARBALL_NAME" -C "$INSTALL_DIR"
+EXTRACTED_CINDER_BINARY="$INSTALL_DIR/cinder-${OS}-${ARCH}"
+ln -sf "$EXTRACTED_CINDER_BINARY" "$BIN_DIR/$CINDER_BINARY" || { error "Symlink creation for Cinder failed."; exit 1; }
 rm -f "$EXPECTED_TARBALL_NAME" "$EXPECTED_CHECKSUM_NAME"
 
 SHELL_NAME=$(basename "$SHELL")
@@ -210,7 +252,7 @@ else
     info "$BIN_DIR is already in PATH in $PROFILE_FILE"
 fi
 
-chmod +x $HOME/.local/bin/obsidian
+chmod +x "$BIN_DIR/$OBSIDIAN_BINARY"
+chmod +x "$BIN_DIR/$CINDER_BINARY"
 
-info "Installation of Obsidian completed successfully!"
-echo "To confirm, run 'obsidian --version'."
+info "Installation of Obsidian tool-chain completed successfully!"
