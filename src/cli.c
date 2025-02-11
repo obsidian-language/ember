@@ -1,7 +1,6 @@
 #include "include/common.h"
 #include "include/cli.h"
 #include "include/fetch.h"
-#include <stdio.h>
 
 void print_rm_help() {
     puts("Usage: ember rm (COMMAND | VERSION)\n\n"

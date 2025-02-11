@@ -2,8 +2,6 @@
 #include "include/cli.h"
 #include "include/fetch.h"
 #include "include/ui.h"
-#include <stdlib.h>
-#include <string.h>
 
 #define VERSION "0.0.1"
 
