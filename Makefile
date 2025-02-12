@@ -1,5 +1,5 @@
 CC = clang
-CFLAGS = -Wall -Wextra -Werror -Wpedantic -std=c17 -g -Iinclude -Incurses
+CFLAGS = -Wall -Wextra -Werror -Wpedantic -std=c17 -Iinclude -Incurses -D_POSIX_C_SOURCE=200809L
 LDFLAGS = -lncurses -lcurl
 
 SRC_DIR = src

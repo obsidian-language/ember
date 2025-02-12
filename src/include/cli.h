@@ -15,5 +15,6 @@ int download_file(const char *url, const char *output_file);
 int extract_tar(const char *tar_file, const char *tool, const char *system, const char *arch, const char *version);
 void install_tool(const char *tool, const char *version);
 void remove_tool(const char *tool, const char *version);
+void upgrade();
 
 #endif

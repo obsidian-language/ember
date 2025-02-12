@@ -90,7 +90,7 @@ int extract_tar(const char *tar_file, const char *tool, const char *os_name, con
 }
 
 void install_tool(const char *tool, const char *version) {
-    char os_name[64], arch[64], url[256], tar_file[128], install_dir[128], extract_dir[128];
+    char os_name[64], arch[64], url[256], tar_file[128], install_dir[128], extract_dir[128], mkdir_cmd[256], command[512];
     system_info(os_name, arch);
 
     snprintf(url, sizeof(url), "https://github.com/obsidian-language/%s/releases/download/%s/%s-%s-%s.tar.gz",
@@ -99,7 +99,6 @@ void install_tool(const char *tool, const char *version) {
     snprintf(install_dir, sizeof(install_dir), "%s/.ember/%s", getenv("HOME"), tool);
     snprintf(extract_dir, sizeof(extract_dir), "%s/%s-%s-%s-%s", install_dir, tool, os_name, arch, version);
 
-    char mkdir_cmd[256];
     snprintf(mkdir_cmd, sizeof(mkdir_cmd), "mkdir -p %s", install_dir);
     system(mkdir_cmd);
 
@@ -108,7 +107,6 @@ void install_tool(const char *tool, const char *version) {
         return;
     }
 
-    char command[512];
     snprintf(command, sizeof(command), "tar -xzf %s -C %s", tar_file, install_dir);
 
     if (system(command) != 0) {
@@ -135,13 +133,12 @@ void install_tool(const char *tool, const char *version) {
 }
 
 void remove_tool(const char *tool, const char *version) {
-    char os_name[64], arch[64], install_dir[128], extract_dir[128];
+    char os_name[64], arch[64], install_dir[128], extract_dir[128], command[512];
     system_info(os_name, arch);
 
     snprintf(install_dir, sizeof(install_dir), "%s/.ember/%s", getenv("HOME"), tool);
     snprintf(extract_dir, sizeof(extract_dir), "%s/%s-%s-%s-%s", install_dir, tool, os_name, arch, version);
 
-    char command[512];
     snprintf(command, sizeof(command), "sudo unlink /usr/local/bin/%s && sudo rm -rf /usr/local/bin/%s", tool, tool);
     system(command);
 
@@ -150,6 +147,59 @@ void remove_tool(const char *tool, const char *version) {
 
     printf("%s uninstalled successfully", tool);
 
+}
+
+void upgrade() {
+    char os_name[64], arch[64], install_dir[128], url[256], tar_file[128], extract_dir[128], command[512], version[64];
+    system_info(os_name, arch);
+
+    FILE *fp = popen("curl -s https://api.github.com/repos/obsidian-language/ember/releases/latest | grep 'tag_name' | cut -d '\"' -f 4", "r");
+    if (!fp) {
+        fprintf(stderr, "Failed to fetch latest release version\n");
+        return;
+    }
+
+    if (!fgets(version, sizeof(version), fp)) {
+        fprintf(stderr, "Failed to read latest release version\n");
+        pclose(fp);
+        return;
+    }
+    pclose(fp);
+
+    version[strcspn(version, "\n")] = 0;
+
+    snprintf(install_dir, sizeof(install_dir), "%s/.ember", getenv("HOME"));
+    snprintf(url, sizeof(url), "https://github.com/obsidian-language/ember/releases/download/%s/ember-%s-%s.tar.gz", version, os_name, arch);
+    snprintf(tar_file, sizeof(tar_file), "ember-%s.tar.gz", version);
+    snprintf(extract_dir, sizeof(extract_dir), "%s/ember-%s-%s-%s", install_dir, os_name, arch, version);
+
+    if (download_file(url, tar_file) != 0) {
+        fprintf(stderr, "Failed to download latest Ember version\n");
+        return;
+    }
+
+    snprintf(command, sizeof(command), "tar -xzf %s -C %s", tar_file, install_dir);
+    if (system(command) != 0) {
+        fprintf(stderr, "Failed to extract %s\n", tar_file);
+        remove(tar_file);
+        return;
+    }
+
+    snprintf(command, sizeof(command), "mv %s/ember-%s-%s %s", install_dir, os_name, arch, extract_dir);
+    if (system(command) != 0) {
+        fprintf(stderr, "Failed to move extracted files\n");
+        remove(tar_file);
+        return;
+    }
+
+    system("sudo unlink /usr/local/bin/ember");
+    snprintf(command, sizeof(command), "sudo ln -s %s /usr/local/bin/ember", extract_dir);
+    if (system(command) != 0) {
+        fprintf(stderr, "Failed to update symlink\n");
+        return;
+    }
+
+    printf("Ember upgraded successfully to version %s\n", version);
 }
 
 void install(int argc, char *argv[]) {

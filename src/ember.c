@@ -3,8 +3,6 @@
 #include "include/fetch.h"
 #include "include/ui.h"
 
-#define VERSION "0.0.1"
-
 int main(int argc, char *argv[]) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <command>\n", argv[0]);
@@ -33,7 +31,7 @@ int main(int argc, char *argv[]) {
             _remove(argc, argv);
         }
     } else if (strcmp(argv[1], "upgrade") == 0) {
-        // Add upgrading...
+        upgrade();
     } else if (strcmp(argv[1], "compile") == 0) {
         // Add compiling...
     } else if (strcmp(argv[1], "nuke") == 0) {
