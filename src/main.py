@@ -161,6 +161,7 @@ def draw_ui(stdscr):
     cinder_version, cinder_tags = versions.get("cinder", ("N/A", "N/A"))
 
     selected_index = 0
+    tools = ["obsidian", "ember", "cinder"]
 
     draw_main_interface(stdscr, selected_index, [obc_version, ember_version, cinder_version])
 
@@ -175,6 +176,16 @@ def draw_ui(stdscr):
             selected_index = (selected_index - 1) % 3
         elif ch == curses.KEY_DOWN:
             selected_index = (selected_index + 1) % 3
+        elif ch == ord('i'):
+            tool = tools[selected_index]
+            version = versions[tool][0]
+            if version != "N/A":
+                install_tool(tool, version)
+        elif ch == ord('u'):
+            tool = tools[selected_index]
+            version = versions[tool][0]
+            if version != "N/A":
+                remove_tool(tool, version)
 
         draw_main_interface(stdscr, selected_index, [obc_version, ember_version, cinder_version])
 
